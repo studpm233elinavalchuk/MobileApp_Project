@@ -1,0 +1,51 @@
+name: iOS CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      
+      - name: Install dependencies (CocoaPods)
+        run: |
+          sudo gem install cocoapods
+          pod install --repo-update
+        continue-on-error: true   
+
+      
+      - name: Build with Xcode
+        run: |
+          xcodebuild clean build \
+            -project YourApp.xcodeproj \
+            -scheme YourApp \
+            -sdk iphoneos \
+            -configuration Release
+
+      
+      - name: Run Tests
+        run: |
+          xcodebuild test \
+            -project YourApp.xcodeproj \
+            -scheme YourApp \
+            -destination 'platform=iOS Simulator,name=iPhone 14,OS=17.0'
+
+      
+      - name: Deploy to TestFlight
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          FASTLANE_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+        run: |
+          sudo gem install fastlane
+          fastlane ios beta
